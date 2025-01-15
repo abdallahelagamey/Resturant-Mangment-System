@@ -1,0 +1,273 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_ORDERS 100
+#define MAX_ITEMS 10
+#define MAX_RESTAURANTS 3
+
+#define BURGER_PRICE 5.99
+#define PIZZA_PRICE 8.99
+#define SALAD_PRICE 4.99
+#define PASTA_PRICE 7.99
+#define SODA_PRICE 1.99
+
+typedef struct {
+    int order_id;
+    char restaurant_name[50];
+    float total_price;
+    char status[20];
+    char address[100];
+} Order;
+
+typedef struct {
+    char name[50];
+    float price;
+} MenuItem;
+
+typedef struct {
+    char name[50];
+    MenuItem menu[MAX_ITEMS];
+    int current_items;
+} Restaurant;
+
+Order orders[MAX_ORDERS];
+int order_count = 0;
+
+Restaurant restaurants[MAX_RESTAURANTS] = {
+    {"Elagamey Restaurant", {{"Burger", BURGER_PRICE}, {"Pizza", PIZZA_PRICE}, {"Salad", SALAD_PRICE}, {"Pasta", PASTA_PRICE}, {"Soda", SODA_PRICE}}, 5},
+    {"Mark and Soda", {{"Burger", BURGER_PRICE}, {"Pizza", PIZZA_PRICE}, {"Salad", SALAD_PRICE}, {"Pasta", PASTA_PRICE}, {"Soda", SODA_PRICE}}, 5},
+    {"Mattar Restaurant", {{"Burger", BURGER_PRICE}, {"Pizza", PIZZA_PRICE}, {"Salad", SALAD_PRICE}, {"Pasta", PASTA_PRICE}, {"Soda", SODA_PRICE}}, 5}
+};
+
+void displayRestaurantMenu(Restaurant *restaurant);
+void placeOrder(Restaurant *restaurant);
+void trackOrder();
+void manageMenu();
+void manageOrder();
+void manageDelivery();
+int addOrder(const char *restaurantName, float total, const char *address);
+
+int main() {
+    int choice;
+
+    while (1) {
+        printf("\n--- Select Option ---\n");
+        printf("1. Place Order\n");
+        printf("2. Track Order\n");
+        printf("3. Manage Menu\n");
+        printf("4. Manage Orders\n");
+        printf("5. Manage Delivery\n");
+        printf("0. Exit\n");
+        printf("---------------------\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: {
+                int rest_choice;
+                printf("\n--- Select Restaurant ---\n");
+                for (int i = 0; i < MAX_RESTAURANTS; i++) {
+                    printf("%d. %s\n", i + 1, restaurants[i].name);
+                }
+                printf("Enter your choice: ");
+                scanf("%d", &rest_choice);
+                if (rest_choice >= 1 && rest_choice <= MAX_RESTAURANTS) {
+                    placeOrder(&restaurants[rest_choice - 1]);
+                } else {
+                    printf("Invalid choice. Please try again.\n");
+                }
+                break;
+            }
+            case 2:
+                trackOrder();
+                break;
+            case 3:
+                manageMenu();
+                break;
+            case 4:
+                manageOrder();
+                break;
+            case 5:
+                manageDelivery();
+                break;
+            case 0:
+                printf("Thank you for using our service!\n");
+                return 0;
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    }
+
+    return 0;
+}
+
+void displayRestaurantMenu(Restaurant *restaurant) {
+    printf("\n------ Menu for %s ------\n", restaurant->name);
+    for (int i = 0; i < restaurant->current_items; i++) {
+        printf("%d. %s - $%.2f\n", i + 1, restaurant->menu[i].name, restaurant->menu[i].price);
+    }
+    printf("0. Finish Order\n");
+    printf("--------------------------\n");
+}
+
+void placeOrder(Restaurant *restaurant) {
+    float total = 0.0;
+    int exitFlag = 0;
+    char address[100];
+
+    printf("Enter delivery address: ");
+    scanf(" %[^\n]", address);  // Read address input including spaces
+
+    while (!exitFlag) {
+        displayRestaurantMenu(restaurant);
+
+        int choice;
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        if (choice >= 1 && choice <= restaurant->current_items) {
+            total += restaurant->menu[choice - 1].price;
+            printf("You ordered %s. Total: $%.2f\n", restaurant->menu[choice - 1].name, total);
+        } else if (choice == 0) {
+            exitFlag = 1;
+        } else {
+            printf("Invalid choice. Please try again.\n");
+        }
+    }
+
+    int order_id = addOrder(restaurant->name, total, address);
+    if (order_id != -1) {
+        printf("Your total price at %s is: $%.2f\n", restaurant->name, total);
+        printf("Your order ID is: %d\n", order_id);
+        printf("Thank you for ordering from %s!\n", restaurant->name);
+    } else {
+        printf("Failed to place the order due to system limitations.\n");
+    }
+}
+
+int addOrder(const char *restaurantName, float total, const char *address) {
+    if (order_count < MAX_ORDERS) {
+        orders[order_count].order_id = order_count + 1;
+        strncpy(orders[order_count].restaurant_name, restaurantName, sizeof(orders[order_count].restaurant_name) - 1);
+        orders[order_count].total_price = total;
+        strcpy(orders[order_count].status, "Placed");
+        strncpy(orders[order_count].address, address, sizeof(orders[order_count].address) - 1);
+        order_count++;
+        return orders[order_count - 1].order_id;
+    } else {
+        printf("Order limit reached. Cannot place more orders.\n");
+        return -1;
+    }
+}
+
+void trackOrder() {
+    int order_id;
+    printf("Enter your order ID: ");
+    scanf("%d", &order_id);
+
+    if (order_id > 0 && order_id <= order_count) {
+        Order order = orders[order_id - 1];
+        printf("\nOrder ID: %d\n", order.order_id);
+        printf("Restaurant: %s\n", order.restaurant_name);
+        printf("Total Price: $%.2f\n", order.total_price);
+        printf("Status: %s\n", order.status);
+        printf("Delivery Address: %s\n", order.address);
+    } else {
+        printf("Invalid order ID.\n");
+    }
+}
+
+void manageMenu() {
+    int rest_choice;
+    printf("\n--- Manage Menu ---\n");
+    for (int i = 0; i < MAX_RESTAURANTS; i++) {
+        printf("%d. %s\n", i + 1, restaurants[i].name);
+    }
+    printf("Enter the restaurant you want to manage: ");
+    scanf("%d", &rest_choice);
+
+    if (rest_choice >= 1 && rest_choice <= MAX_RESTAURANTS) {
+        Restaurant *restaurant = &restaurants[rest_choice - 1];
+        int menu_choice;
+        printf("\n--- Manage %s Menu ---\n", restaurant->name);
+        for (int i = 0; i < restaurant->current_items; i++) {
+            printf("%d. %s - $%.2f\n", i + 1, restaurant->menu[i].name, restaurant->menu[i].price);
+        }
+        printf("%d. Add New Dish\n", restaurant->current_items + 1);
+        printf("%d. Delete Dish\n", restaurant->current_items + 2);
+        printf("Enter the item number to update (0 to cancel): ");
+        scanf("%d", &menu_choice);
+
+        if (menu_choice >= 1 && menu_choice <= restaurant->current_items) {
+            printf("Enter new name for %s: ", restaurant->menu[menu_choice - 1].name);
+            scanf(" %[^\n]", restaurant->menu[menu_choice - 1].name);
+            printf("Enter new price for %s: ", restaurant->menu[menu_choice - 1].name);
+            scanf("%f", &restaurant->menu[menu_choice - 1].price);
+            printf("Menu item updated successfully.\n");
+        } else if (menu_choice == restaurant->current_items + 1) {
+            if (restaurant->current_items < MAX_ITEMS) {
+                printf("Enter name for new dish: ");
+                scanf(" %[^\n]", restaurant->menu[restaurant->current_items].name);
+                printf("Enter price for new dish: ");
+                scanf("%f", &restaurant->menu[restaurant->current_items].price);
+                restaurant->current_items++;
+                printf("New dish added successfully.\n");
+            } else {
+                printf("Menu is full. Cannot add new dish.\n");
+            }
+        } else if (menu_choice == restaurant->current_items + 2) {
+            int delete_choice;
+            printf("Enter the item number to delete: ");
+            scanf("%d", &delete_choice);
+            if (delete_choice >= 1 && delete_choice <= restaurant->current_items) {
+                for (int i = delete_choice - 1; i < restaurant->current_items - 1; i++) {
+                    strcpy(restaurant->menu[i].name, restaurant->menu[i + 1].name);
+                    restaurant->menu[i].price = restaurant->menu[i + 1].price;
+                }
+                strcpy(restaurant->menu[restaurant->current_items - 1].name, "");
+                restaurant->menu[restaurant->current_items - 1].price = 0.0;
+                restaurant->current_items--;
+                printf("Dish deleted successfully.\n");
+            } else {
+                printf("Invalid choice. Please try again.\n");
+            }
+        } else if (menu_choice != 0) {
+            printf("Invalid choice. Please try again.\n");
+        }
+    } else {
+        printf("Invalid choice. Please try again.\n");
+    }
+}
+
+void manageOrder() {
+    int order_id;
+    printf("\n--- Manage Orders ---\n");
+    printf("Enter the order ID to update status (0 to cancel): ");
+    scanf("%d", &order_id);
+
+    if (order_id > 0 && order_id <= order_count) {
+        printf("Current status: %s\n", orders[order_id - 1].status);
+        printf("Enter new status: ");
+        scanf(" %[^\n]", orders[order_id - 1].status);
+        printf("Order status updated successfully.\n");
+    } else if (order_id != 0) {
+        printf("Invalid order ID.\n");
+    }
+}
+
+void manageDelivery() {
+    int order_id;
+    printf("\n--- Manage Delivery ---\n");
+    printf("Enter the order ID to update address (0 to cancel): ");
+    scanf("%d", &order_id);
+
+    if (order_id > 0 && order_id <= order_count) {
+        printf("Current address: %s\n", orders[order_id - 1].address);
+        printf("Enter new address: ");
+        scanf(" %[^\n]", orders[order_id - 1].address);
+        printf("Delivery address updated successfully.\n");
+    } else if (order_id != 0) {
+        printf("Invalid order ID.\n");
+    }
+}
